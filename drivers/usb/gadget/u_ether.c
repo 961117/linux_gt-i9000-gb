@@ -611,10 +611,10 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	 * though any robust network rx path ignores extra padding.
 	 * and some hardware doesn't like to write zlps.
 	 */
-	req->zero = 1;
-	if (!dev->zlp && (length % in->maxpacket) == 0)
+	if (dev->zlp)
+		req->zero = 1;
+	else if (length % in->maxpacket == 0)
 		length++;
-
 	req->length = length;
 
 	/* throttle highspeed IRQ rate back slightly */
@@ -635,14 +635,15 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 
 	if (retval) {
 		dev_kfree_skb_any(skb);
-drop:
-		dev->net->stats.tx_dropped++;
 
 
 #ifdef CONFIG_USB_GADGET_S3C_OTGD_DMA_MODE
 		if (req->buf != skb->data)
 			kfree(req->buf);
 #endif
+		dev_kfree_skb_any(skb);
+drop:
+		dev->net->stats.tx_dropped++;
 		spin_lock_irqsave(&dev->req_lock, flags);
 		if (list_empty(&dev->tx_reqs))
 			netif_start_queue(net);

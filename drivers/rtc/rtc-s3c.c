@@ -119,7 +119,7 @@ static int s3c_rtc_setpie(struct device *dev, int enabled)
 		if (enabled)
 			tmp |= S3C2410_TICNT_ENABLE;
 
-		writew(tmp, s3c_rtc_base + S3C2410_TICNT);
+		/* writew(tmp, s3c_rtc_base + S3C2410_TICNT); */
 	}
 
 	spin_unlock_irq(&s3c_rtc_pie_lock);
@@ -145,7 +145,7 @@ static int s3c_rtc_setfreq(struct device *dev, int freq)
 
 	tmp |= (rtc_dev->max_user_freq / freq)-1;
 
-	writel(tmp, s3c_rtc_base + S3C2410_TICNT);
+	/* writel(tmp, s3c_rtc_base + S3C2410_TICNT); */
 	spin_unlock_irq(&s3c_rtc_pie_lock);
 
 	return 0;
@@ -751,15 +751,11 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 
 /* RTC Power management control */
 
-static int ticnt_save;
-
 static int s3c_rtc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct timespec time;
 
 	time.tv_nsec = 0;
-	/* save TICNT for anyone using periodic interrupts */
-	ticnt_save = readl(s3c_rtc_base + S3C2410_TICNT);
 
 	if (device_may_wakeup(&pdev->dev))
 		enable_irq_wake(s3c_rtc_alarmno);
@@ -772,8 +768,6 @@ static int s3c_rtc_resume(struct platform_device *pdev)
 	struct timespec time;
 
 	time.tv_nsec = 0;
-
-	writel(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
 
 	if (device_may_wakeup(&pdev->dev))
 		disable_irq_wake(s3c_rtc_alarmno);

@@ -905,6 +905,16 @@ static irqreturn_t max8998_int_work_func(int irq, void *max8998_chg)
 		else {
 			chg->set_batt_full = true;
 
+#if defined(CONFIG_ARIES_NTT)
+                        /* for 2nd topoff interrupt, disable charging */
+                        ret = max8998_write_reg(i2c, MAX8998_REG_CHGR2,
+                                (chg->esafe     << MAX8998_SHIFT_ESAFEOUT) |
+                                (MAX8998_CHGTIME_7HR    << MAX8998_SHIFT_FT) |
+                                (MAX8998_CHGEN_DISABLE  << MAX8998_SHIFT_CHGEN));
+                        if (ret < 0)
+                                goto err;
+#endif
+
 			if (chg->cable_status == CABLE_TYPE_AC)
 #if defined(CONFIG_ARIES_NTT)
 				max8998_write_reg(i2c, MAX8998_REG_CHGR1,
@@ -922,6 +932,16 @@ static irqreturn_t max8998_int_work_func(int irq, void *max8998_chg)
 					(MAX8998_TOPOFF_25	<< MAX8998_SHIFT_TOPOFF) |
 					(MAX8998_RSTR_DISABLE	<< MAX8998_SHIFT_RSTR) |
 					(MAX8998_ICHG_475	<< MAX8998_SHIFT_ICHG));
+
+#if defined(CONFIG_ARIES_NTT)
+                        /* for 2nd topoff interrupt, enable charging */
+                        ret = max8998_write_reg(i2c, MAX8998_REG_CHGR2,
+                                (chg->esafe     << MAX8998_SHIFT_ESAFEOUT) |
+                                (MAX8998_CHGTIME_7HR    << MAX8998_SHIFT_FT) |
+                                (MAX8998_CHGEN_ENABLE   << MAX8998_SHIFT_CHGEN));
+                        if (ret < 0)
+                                goto err;
+#endif
 		}
 	}
 
